@@ -1,23 +1,29 @@
 #!/bin/sh
-#
-# Run iPhone/Android emulator
-#
-# Usage:
-#   ./run_emulator.sh iphone
-#
-UNAME=`uname`
-VERSION=1.7.2
-ANDROID_SDK=$HOME/Library/AndroidSDK
+ROOT=$(cd $(dirname $0);pwd)
+EMULATOR="$ANDROID_SDK/tools/emulator"
+TITANIUM="$TITANIUM_SDK/titanium.py"
+cd $ROOT/../
 
-if [ $UNAME = 'Linux' ]; then
-    TITANIUM=$HOME/.titanium/mobilesdk/linux/$VERSION/titanium.py
-elif [ $UNAME = 'Darwin' ]; then
-    TITANIUM="$HOME/Library/Application Support/Titanium/mobilesdk/osx/$VERSION/titanium.py"
-fi
-
-if [ $1 = 'android' ]; then
-    # Having no idea but didn't work
-    "$TITANIUM" run --platform=android --android=$ANDROID_SDK
-elif [ $1 = 'iphone' ]; then
+if [ "$1" = "android" ]; then
+    # Run emulator if it isn't running
+    if ps -ef | grep emulator | grep -v grep; then
+        "$EMULATOR" -avd default&
+    fi
+    # fastdev server
+    if "$TITANIUM" fastdev status | egrep 'No Fastdev|stopped'; then
+        echo "Run fastdev server"
+        # Run fastdev server if it isn't running
+        "$TITANIUM" fastdev start&
+        echo "Compile and install apps..."
+        # Compile and install app
+        "$TITANIUM" run --platform=android
+    else
+        echo "Restart fastdev server"
+        # Restart fastdev server
+        "$TITANIUM" fastdev restart-app
+    fi
+elif [ "$1" = "iphone" ]; then
     "$TITANIUM" run --platform=iphone
+else
+    echo "Usage: run_emulator <platform>"
 fi
